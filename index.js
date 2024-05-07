@@ -1,15 +1,45 @@
-const dotenv = require('dotenv').config()
+const TelegramBot = require('node-telegram-bot-api');
+require('dotenv').config();
 
-const { Telegraf } = require("telegraf");
-const { message } = require("telegraf/filters");
+const token = process.env.BOT_TOKEN; // Replace with your own bot token
+const bot = new TelegramBot(token, { polling: true });
 
-const bot = new Telegraf("7076387942:AAFuxOELLQ1SFyKeI1Y9WYsLm40im7gxgFc");
-bot.start((ctx) => ctx.reply("Welcome"));
-bot.help((ctx) => ctx.reply("Send me a sticker"));
-bot.on(message("sticker"), (ctx) => ctx.reply("👍"));
-bot.hears("hi", (ctx) => ctx.reply("Hey there"));
-bot.launch();
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
 
-// Enable graceful stop
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+    // Send initial message with persistent inline keyboard menu
+    bot.sendMessage(chatId, 'Hey, what’s up?', {
+        reply_markup: JSON.stringify({
+            inline_keyboard: [
+                [{ text: '\u2630 Menu', callback_data: 'menu' }]
+            ]
+        })
+    });
+});
+
+// Handle menu button selection and other commands
+bot.on('callback_query', (query) => {
+    const chatId = query.message.chat.id;
+    const messageId = query.message.message_id;
+
+    if (query.data === 'menu') {
+        // Edit message to display full menu options (customizable)
+        bot.editMessageText('Choose an option:', {
+            chat_id: chatId,
+            message_id: messageId,
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    // Your menu options here
+                ]
+            })
+        });
+    } else if (query.data === 'start') {
+        // Handle 'Start' button selection (customizable)
+        bot.answerCallbackQuery(query.id);
+        bot.sendMessage(chatId, 'Hey, what’s up? (Selected Start)'); // Replace with desired action
+    } else if (query.data === 'exit') {
+        // Handle 'Exit' button selection (customizable)
+        bot.answerCallbackQuery(query.id);
+        bot.sendMessage(chatId, 'Sorry to see you going. Bye for now');
+    }
+});
